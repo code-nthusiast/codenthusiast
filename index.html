@@ -10,8 +10,9 @@
   <div class="max-w-2xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-4">🚀 Code Enthusiast</h1>
 
-    <!-- Auth Buttons -->
+    <!-- Auth Section -->
     <div id="authSection" class="mb-4">
+      <p id="userInfo" class="mb-2 text-gray-700"></p>
       <button id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Login with Google</button>
       <button id="logoutBtn" class="px-4 py-2 bg-red-600 text-white rounded hidden">Logout</button>
     </div>
@@ -32,12 +33,12 @@
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ✅ Correct Firebase config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
       authDomain: "codenthusiast-d4e21.firebaseapp.com",
       projectId: "codenthusiast-d4e21",
-      storageBucket: "codenthusiast-d4e21.appspot.com",   // ✅ fixed
+      storageBucket: "codenthusiast-d4e21.appspot.com",
       messagingSenderId: "1098736253424",
       appId: "1:1098736253424:web:0813491a1279ca7ada8535",
       measurementId: "G-C88NVCTDMV"
@@ -56,15 +57,18 @@
     const postBtn = document.getElementById("postBtn");
     const postContent = document.getElementById("postContent");
     const postsDiv = document.getElementById("posts");
+    const userInfo = document.getElementById("userInfo");
 
     let currentUser = null;
 
     // 🔹 Auth state listener
     onAuthStateChanged(auth, async (user) => {
-      console.log("Auth state changed:", user);
       if (user) {
         currentUser = user;
-        alert("Signed in as " + user.displayName);
+        userInfo.textContent = `Signed in as ${user.displayName}`;
+        loginBtn.classList.add("hidden");
+        logoutBtn.classList.remove("hidden");
+        postSection.classList.remove("hidden");
 
         // Save user profile in Firestore
         await setDoc(doc(db, "users", currentUser.uid), {
@@ -72,14 +76,10 @@
           displayName: currentUser.displayName
         }, { merge: true });
 
-        loginBtn.classList.add("hidden");
-        logoutBtn.classList.remove("hidden");
-        postSection.classList.remove("hidden");
-
         loadPosts();
       } else {
-        alert("Signed out");
         currentUser = null;
+        userInfo.textContent = "";
         loginBtn.classList.remove("hidden");
         logoutBtn.classList.add("hidden");
         postSection.classList.add("hidden");
@@ -90,10 +90,13 @@
     // Login button
     loginBtn.onclick = async () => {
       try {
+        loginBtn.disabled = true;
         await signInWithPopup(auth, provider);
       } catch (err) {
         console.error("Login error:", err);
         alert("Login failed: " + err.message);
+      } finally {
+        loginBtn.disabled = false;
       }
     };
 
