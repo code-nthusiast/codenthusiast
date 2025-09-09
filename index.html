@@ -1,164 +1,87 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Code Enthusiast</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f5f5; }
-    header { background:#6200ea; color:white; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
-    nav button { margin:0 0.5rem; padding:0.5rem 1rem; border:none; border-radius:5px; background:#3700b3; color:white; cursor:pointer; }
-    nav button.active { background:#03dac6; color:black; }
-    .container { padding:1rem; }
-    .hidden { display:none; }
-    .post { background:white; margin:1rem 0; padding:1rem; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-    .post small { color:gray; }
-    .btn { padding:0.4rem 0.8rem; border:none; border-radius:5px; cursor:pointer; }
-    .btn-danger { background:#e53935; color:white; }
-    .btn-primary { background:#6200ea; color:white; }
-  </style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CodeNThusiast — Community</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="logo">CN</div>
+      <div>
+        <div class="app-title">CodeNThusiast</div>
+        <div class="app-sub">Share projects • follow coders • discover</div>
+      </div>
+    </div>
 
-  <header>
-    <h2>🚀 Code Enthusiast</h2>
-    <div id="authSection">
-      <button id="loginBtn" class="btn btn-primary">Login with Google</button>
-      <button id="logoutBtn" class="btn btn-danger hidden">Logout</button>
-      <span id="userInfo"></span>
+    <div class="auth-area">
+      <div id="userBox" class="user-box hidden">
+        <img id="userPhoto" class="avatar" alt="avatar"/>
+        <div id="userName" class="user-name"></div>
+      </div>
+      <button id="signBtn" class="btn primary">Sign in</button>
     </div>
   </header>
 
-  <nav>
-    <button data-tab="posts" class="active">Posts</button>
-    <button data-tab="search">Search Coders</button>
-    <button data-tab="following">Following</button>
+  <nav class="tabs">
+    <button data-tab="feed" class="tab active">Feed</button>
+    <button data-tab="following" class="tab">Following</button>
+    <button data-tab="mine" class="tab">My uploads</button>
+    <button data-tab="search" class="tab">Search coders</button>
   </nav>
 
-  <div class="container">
-    <!-- Posts Tab -->
-    <div id="posts" class="tabContent">
-      <h3>Latest Posts</h3>
-      <form id="postForm" class="hidden">
-        <textarea id="postText" rows="3" style="width:100%;" placeholder="Share your project..."></textarea><br>
-        <button type="submit" class="btn btn-primary">Post</button>
-      </form>
-      <div id="postsList"></div>
-    </div>
+  <main class="container">
+    <!-- Feed -->
+    <section id="feed" class="panel">
+      <div id="composer" class="card hidden">
+        <div class="composer-top">
+          <img id="composerAvatar" class="avatar" alt="me"/>
+          <textarea id="postText" placeholder="Share your project, link, or idea..." rows="3"></textarea>
+        </div>
+        <div class="composer-bottom">
+          <input id="fileInput" type="file" />
+          <div class="composer-actions">
+            <button id="attachLabel" class="btn">Attach</button>
+            <button id="postBtn" class="btn primary">Post</button>
+          </div>
+          <div id="composerStatus" class="small muted"></div>
+        </div>
+      </div>
 
-    <!-- Search Tab -->
-    <div id="search" class="tabContent hidden">
-      <h3>Search Coders</h3>
-      <input type="text" id="searchInput" placeholder="Enter coder name..." style="width:100%; padding:0.5rem;">
-      <div id="searchResults"></div>
-    </div>
+      <div id="posts" class="grid"></div>
+    </section>
 
-    <!-- Following Tab -->
-    <div id="following" class="tabContent hidden">
-      <h3>Coders You Follow</h3>
-      <div id="followingList"></div>
-    </div>
-  </div>
+    <!-- Following -->
+    <section id="following" class="panel hidden">
+      <h3>Posts by people you follow</h3>
+      <div id="postsFollowing" class="grid"></div>
+    </section>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <!-- My uploads -->
+    <section id="mine" class="panel hidden">
+      <h3>Your uploads</h3>
+      <div id="postsMine" class="grid"></div>
+    </section>
 
-  <script>
-    // Your Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
-      authDomain: "codenthusiast-d4e21.firebaseapp.com",
-      projectId: "codenthusiast-d4e21",
-      storageBucket: "codenthusiast-d4e21.appspot.com",
-      messagingSenderId: "1098736253424",
-      appId: "1:1098736253424:web:0813491a1279ca7ada8535",
-      measurementId: "G-C88NVCTDMV"
-    };
+    <!-- Search -->
+    <section id="search" class="panel hidden">
+      <div class="card">
+        <input id="searchInput" placeholder="Search coders by name..." />
+        <div id="searchResults" class="list"></div>
+      </div>
+    </section>
+  </main>
 
-    // Init Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  <footer class="footer">
+    <div>Built with Firebase • Follow the setup steps in README below</div>
+  </footer>
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userInfo = document.getElementById("userInfo");
-    const postForm = document.getElementById("postForm");
-    const postsList = document.getElementById("postsList");
-
-    // Auth
-    loginBtn.addEventListener("click", () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(err => alert(err.message));
-    });
-
-    logoutBtn.addEventListener("click", () => {
-      auth.signOut();
-    });
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        userInfo.textContent = `Signed in as ${user.displayName}`;
-        loginBtn.classList.add("hidden");
-        logoutBtn.classList.remove("hidden");
-        postForm.classList.remove("hidden");
-      } else {
-        userInfo.textContent = "";
-        loginBtn.classList.remove("hidden");
-        logoutBtn.classList.add("hidden");
-        postForm.classList.add("hidden");
-      }
-    });
-
-    // Tabs
-    document.querySelectorAll("nav button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".tabContent").forEach(tab => tab.classList.add("hidden"));
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.remove("hidden");
-      });
-    });
-
-    // Posting
-    postForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const text = document.getElementById("postText").value.trim();
-      if (!text) return;
-      const user = auth.currentUser;
-      db.collection("posts").add({
-        text,
-        uid: user.uid,
-        author: user.displayName,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      document.getElementById("postText").value = "";
-    });
-
-    // Realtime posts
-    db.collection("posts").orderBy("timestamp","desc").onSnapshot(snapshot => {
-      postsList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const post = doc.data();
-        const div = document.createElement("div");
-        div.className = "post";
-        div.innerHTML = `
-          <p>${post.text}</p>
-          <small>by ${post.author || "Unknown"}</small><br>
-          ${auth.currentUser && auth.currentUser.uid === post.uid ? 
-            `<button class="btn btn-danger" onclick="deletePost('${doc.id}')">Delete</button>` 
-            : ""}
-        `;
-        postsList.appendChild(div);
-      });
-    });
-
-    // Delete Post
-    function deletePost(id) {
-      db.collection("posts").doc(id).delete();
-    }
-  </script>
+  <!-- App script -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
