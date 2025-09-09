@@ -2,50 +2,46 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>CodeNThusiast</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codenthusiast Community</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
-  <div class="max-w-4xl mx-auto p-6">
-    <h1 class="text-3xl font-bold text-center mb-6">🚀 CodeNThusiast</h1>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-3xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-4">Community Projects</h1>
 
-    <!-- Auth Section -->
-    <div id="authSection" class="text-center">
-      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Sign In with Google</button>
-      <button id="logoutBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+    <!-- Login / Logout -->
+    <button id="loginBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Sign in with Google</button>
+    <button id="logoutBtn" class="px-4 py-2 bg-red-600 text-white rounded hidden">Logout</button>
+
+    <!-- Tabs -->
+    <div id="tabs" class="hidden mt-6 flex gap-4">
+      <button id="allTab" class="px-4 py-2 bg-blue-500 text-white rounded">All Projects</button>
+      <button id="followingTab" class="px-4 py-2 bg-gray-300 rounded">Following</button>
     </div>
 
-    <!-- New Post Section -->
+    <!-- Post form -->
     <div id="postSection" class="hidden mt-6 bg-white p-4 rounded shadow">
-      <textarea id="postContent" class="w-full p-2 border rounded" placeholder="Share your project..."></textarea>
-      <button id="postBtn" class="mt-2 bg-green-600 text-white px-4 py-2 rounded">Post</button>
+      <textarea id="postContent" class="w-full border rounded p-2" placeholder="Share your project..."></textarea>
+      <button id="postBtn" class="mt-2 px-4 py-2 bg-green-600 text-white rounded">Post</button>
     </div>
 
-    <!-- Search Section -->
-    <div id="searchSection" class="hidden mt-6 bg-white p-4 rounded shadow">
-      <input id="searchInput" type="text" class="w-full p-2 border rounded" placeholder="Search coders by email...">
+    <!-- Search -->
+    <div id="searchSection" class="hidden mt-6">
+      <input id="searchInput" type="text" placeholder="Search coders..." class="w-full border rounded p-2" />
       <div id="searchResults" class="mt-2"></div>
     </div>
 
-    <!-- Following Tab -->
-    <div id="tabs" class="hidden mt-6 flex gap-4">
-      <button id="allPostsTab" class="px-4 py-2 bg-blue-500 text-white rounded">All Posts</button>
-      <button id="followingTab" class="px-4 py-2 bg-gray-500 text-white rounded">Following</button>
-    </div>
-
-    <!-- Posts Feed -->
+    <!-- Posts -->
     <div id="posts" class="mt-6 space-y-4"></div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // 🔹 Your Firebase Config
+    // ✅ Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
       authDomain: "codenthusiast-d4e21.firebaseapp.com",
@@ -61,135 +57,129 @@
     const provider = new GoogleAuthProvider();
     const db = getFirestore(app);
 
+    // UI Elements
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const postSection = document.getElementById("postSection");
     const postBtn = document.getElementById("postBtn");
+    const postContent = document.getElementById("postContent");
     const postsDiv = document.getElementById("posts");
     const searchSection = document.getElementById("searchSection");
     const searchInput = document.getElementById("searchInput");
     const searchResults = document.getElementById("searchResults");
     const tabs = document.getElementById("tabs");
-    const allPostsTab = document.getElementById("allPostsTab");
-    const followingTab = document.getElementById("followingTab");
 
     let currentUser = null;
-    let following = [];
 
-    // 🔹 Login
+    // 🔹 Track login state
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+
+        // Save user info in Firestore
+        await setDoc(doc(db, "users", currentUser.uid), {
+          email: currentUser.email,
+          displayName: currentUser.displayName
+        }, { merge: true });
+
+        loginBtn.classList.add("hidden");
+        logoutBtn.classList.remove("hidden");
+        postSection.classList.remove("hidden");
+        searchSection.classList.remove("hidden");
+        tabs.classList.remove("hidden");
+
+        loadPosts();
+      } else {
+        currentUser = null;
+        loginBtn.classList.remove("hidden");
+        logoutBtn.classList.add("hidden");
+        postSection.classList.add("hidden");
+        searchSection.classList.add("hidden");
+        tabs.classList.add("hidden");
+        postsDiv.innerHTML = "";
+      }
+    });
+
+    // Sign in
     loginBtn.onclick = async () => {
-      const result = await signInWithPopup(auth, provider);
-      currentUser = result.user;
-
-      // Save user to Firestore
-      await setDoc(doc(db, "users", currentUser.uid), {
-        email: currentUser.email,
-        displayName: currentUser.displayName
-      }, { merge: true });
-
-      loginBtn.classList.add("hidden");
-      logoutBtn.classList.remove("hidden");
-      postSection.classList.remove("hidden");
-      searchSection.classList.remove("hidden");
-      tabs.classList.remove("hidden");
-
-      loadPosts();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (e) {
+        alert("Login failed: " + e.message);
+      }
     };
 
-    // 🔹 Logout
+    // Sign out
     logoutBtn.onclick = async () => {
       await signOut(auth);
-      currentUser = null;
-      loginBtn.classList.remove("hidden");
-      logoutBtn.classList.add("hidden");
-      postSection.classList.add("hidden");
-      searchSection.classList.add("hidden");
-      tabs.classList.add("hidden");
-      postsDiv.innerHTML = "";
     };
 
-    // 🔹 Create Post
+    // Post content
     postBtn.onclick = async () => {
-      const content = document.getElementById("postContent").value;
-      if (!content) return;
+      const text = postContent.value.trim();
+      if (text === "" || !currentUser) return;
+
       await addDoc(collection(db, "posts"), {
-        uid: currentUser.uid,
-        author: currentUser.displayName,
-        email: currentUser.email,
-        content,
-        createdAt: Date.now()
+        text,
+        user: currentUser.displayName || currentUser.email,
+        userId: currentUser.uid,
+        createdAt: new Date()
       });
-      document.getElementById("postContent").value = "";
+
+      postContent.value = "";
       loadPosts();
     };
 
-    // 🔹 Load Posts
-    async function loadPosts(followingOnly = false) {
+    // Load posts
+    async function loadPosts() {
       postsDiv.innerHTML = "";
-      let q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-
-      snapshot.forEach(docSnap => {
-        const post = docSnap.data();
-
-        if (followingOnly && !following.includes(post.uid)) return;
-
-        const postDiv = document.createElement("div");
-        postDiv.className = "p-4 bg-white rounded shadow";
-
-        postDiv.innerHTML = `
-          <div class="flex justify-between">
+      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "bg-white p-4 rounded shadow";
+        div.innerHTML = `
+          <div class="flex justify-between items-center">
             <div>
-              <strong>${post.author}</strong> <small class="text-gray-500">(${post.email})</small>
+              <div class="font-bold">${data.user}</div>
+              <p>${data.text}</p>
             </div>
-            ${currentUser && post.uid === currentUser.uid ? 
-              `<button class="text-red-500" data-id="${docSnap.id}">Delete</button>` : ""}
+            ${currentUser && currentUser.uid === data.userId ? 
+              `<button class="deleteBtn px-2 py-1 bg-red-500 text-white rounded" data-id="${docSnap.id}">Delete</button>` 
+              : ""}
           </div>
-          <p class="mt-2">${post.content}</p>
         `;
+        postsDiv.appendChild(div);
+      });
 
-        // Delete functionality
-        if (currentUser && post.uid === currentUser.uid) {
-          postDiv.querySelector("button").onclick = async () => {
-            await deleteDoc(doc(db, "posts", docSnap.id));
-            loadPosts(followingOnly);
-          };
-        }
-
-        postsDiv.appendChild(postDiv);
+      // Attach delete button events
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.getAttribute("data-id");
+          await deleteDoc(doc(db, "posts", id));
+          loadPosts();
+        };
       });
     }
 
-    // 🔹 Search Coders
-    searchInput.oninput = async () => {
+    // Search coders
+    searchInput.addEventListener("input", async () => {
+      const text = searchInput.value.toLowerCase();
       searchResults.innerHTML = "";
-      const queryText = searchInput.value.toLowerCase();
-      if (!queryText) return;
+      if (text.length < 2) return;
 
-      const snapshot = await getDocs(collection(db, "users"));
-      snapshot.forEach(docSnap => {
-        const user = docSnap.data();
-        if (user.email.toLowerCase().includes(queryText)) {
+      const snap = await getDocs(collection(db, "users"));
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.displayName && data.displayName.toLowerCase().includes(text)) {
           const div = document.createElement("div");
-          div.className = "p-2 border-b flex justify-between";
-          div.innerHTML = `
-            <span>${user.displayName} (${user.email})</span>
-            <button class="text-blue-600" data-id="${docSnap.id}">Follow</button>
-          `;
-          div.querySelector("button").onclick = async () => {
-            following.push(docSnap.id);
-            await setDoc(doc(db, "following", currentUser.uid), { list: following });
-            alert("Followed " + user.displayName);
-          };
+          div.className = "p-2 bg-gray-200 rounded mb-1";
+          div.textContent = data.displayName;
           searchResults.appendChild(div);
         }
       });
-    };
-
-    // 🔹 Tabs
-    allPostsTab.onclick = () => loadPosts(false);
-    followingTab.onclick = () => loadPosts(true);
-
+    });
   </script>
 </body>
 </html>
