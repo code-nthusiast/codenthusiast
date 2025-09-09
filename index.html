@@ -1,87 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>CodeNThusiast — Community</title>
-
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codenthusiast</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="site-header">
-    <div class="brand">
-      <div class="logo">CN</div>
-      <div>
-        <div class="app-title">CodeNThusiast</div>
-        <div class="app-sub">Share projects • follow coders • discover</div>
-      </div>
-    </div>
-
-    <div class="auth-area">
-      <div id="userBox" class="user-box hidden">
-        <img id="userPhoto" class="avatar" alt="avatar"/>
-        <div id="userName" class="user-name"></div>
-      </div>
-      <button id="signBtn" class="btn primary">Sign in</button>
+  <header>
+    <h1>Codenthusiast</h1>
+    <div>
+      <button id="loginBtn">Sign in with Google</button>
+      <button id="logoutBtn" style="display:none;">Logout</button>
+      <span id="userInfo"></span>
     </div>
   </header>
 
-  <nav class="tabs">
-    <button data-tab="feed" class="tab active">Feed</button>
-    <button data-tab="following" class="tab">Following</button>
-    <button data-tab="mine" class="tab">My uploads</button>
-    <button data-tab="search" class="tab">Search coders</button>
+  <nav>
+    <button onclick="showTab('feed')">Feed</button>
+    <button onclick="showTab('following')">Following</button>
+    <button onclick="showTab('search')">Search Coders</button>
   </nav>
 
-  <main class="container">
+  <main>
     <!-- Feed -->
-    <section id="feed" class="panel">
-      <div id="composer" class="card hidden">
-        <div class="composer-top">
-          <img id="composerAvatar" class="avatar" alt="me"/>
-          <textarea id="postText" placeholder="Share your project, link, or idea..." rows="3"></textarea>
-        </div>
-        <div class="composer-bottom">
-          <input id="fileInput" type="file" />
-          <div class="composer-actions">
-            <button id="attachLabel" class="btn">Attach</button>
-            <button id="postBtn" class="btn primary">Post</button>
-          </div>
-          <div id="composerStatus" class="small muted"></div>
-        </div>
-      </div>
-
-      <div id="posts" class="grid"></div>
+    <section id="feed" class="tab">
+      <h2>Global Feed</h2>
+      <form id="postForm">
+        <textarea id="postText" placeholder="What's on your mind?" required></textarea>
+        <input type="file" id="postFile">
+        <button type="submit">Post</button>
+      </form>
+      <div id="posts"></div>
     </section>
 
     <!-- Following -->
-    <section id="following" class="panel hidden">
-      <h3>Posts by people you follow</h3>
-      <div id="postsFollowing" class="grid"></div>
-    </section>
-
-    <!-- My uploads -->
-    <section id="mine" class="panel hidden">
-      <h3>Your uploads</h3>
-      <div id="postsMine" class="grid"></div>
+    <section id="following" class="tab hidden">
+      <h2>Following</h2>
+      <div id="followingPosts"></div>
     </section>
 
     <!-- Search -->
-    <section id="search" class="panel hidden">
-      <div class="card">
-        <input id="searchInput" placeholder="Search coders by name..." />
-        <div id="searchResults" class="list"></div>
-      </div>
+    <section id="search" class="tab hidden">
+      <h2>Find Coders</h2>
+      <input type="text" id="searchInput" placeholder="Search by name">
+      <div id="searchResults"></div>
     </section>
   </main>
 
-  <footer class="footer">
-    <div>Built with Firebase • Follow the setup steps in README below</div>
-  </footer>
-
-  <!-- App script -->
-  <script type="module" src="./app.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
+
