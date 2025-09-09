@@ -1,194 +1,194 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Community Projects</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; padding:20px; background:#f7fafc; color:#0f172a; }
-    .container{max-width:900px;margin:0 auto}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    button{background:#0f172a;color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
-    .card{background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(2,6,23,0.06)}
-    form input, form textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #e6e9ef; margin-top:6px; }
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-    img.preview{max-width:100%;border-radius:8px;margin-top:8px}
-    .small{font-size:13px;color:#666}
-  </style>
+  <meta charset="UTF-8">
+  <title>CodeNThusiast</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div>
-        <h1 style="margin:0">Community Projects</h1>
-        <div class="small">Sign in, upload your project, and browse others</div>
-      </div>
-      <div>
-        <div id="userArea" style="display:flex;gap:8px;align-items:center">
-          <span id="userName" class="small"></span>
-          <button id="authBtn">Sign in</button>
-        </div>
-      </div>
-    </header>
+<body class="bg-gray-100 text-gray-800">
+  <div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center mb-6">🚀 CodeNThusiast</h1>
 
-    <section class="card" id="uploadCard" style="display:none">
-      <h3 style="margin-top:0">Upload a project</h3>
-      <form id="projectForm">
-        <label>Title</label>
-        <input id="title" required placeholder="Project title" />
-        <label>Description</label>
-        <textarea id="description" rows="4" placeholder="Short description"></textarea>
-        <label>Image (optional)</label>
-        <input id="image" type="file" accept="image/*" />
-        <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-          <button type="submit">Upload project</button>
-          <div id="uploadStatus" class="small" style="color:#666"></div>
-        </div>
-      </form>
-    </section>
+    <!-- Auth Section -->
+    <div id="authSection" class="text-center">
+      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Sign In with Google</button>
+      <button id="logoutBtn" class="hidden bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+    </div>
 
-    <section>
-      <h2 style="margin-bottom:6px">Projects</h2>
-      <div id="projects" class="grid"></div>
-    </section>
+    <!-- New Post Section -->
+    <div id="postSection" class="hidden mt-6 bg-white p-4 rounded shadow">
+      <textarea id="postContent" class="w-full p-2 border rounded" placeholder="Share your project..."></textarea>
+      <button id="postBtn" class="mt-2 bg-green-600 text-white px-4 py-2 rounded">Post</button>
+    </div>
 
-    <footer style="margin-top:20px" class="small">Built with Firebase • Make sure you pasted your firebaseConfig (see instructions)</footer>
+    <!-- Search Section -->
+    <div id="searchSection" class="hidden mt-6 bg-white p-4 rounded shadow">
+      <input id="searchInput" type="text" class="w-full p-2 border rounded" placeholder="Search coders by email...">
+      <div id="searchResults" class="mt-2"></div>
+    </div>
+
+    <!-- Following Tab -->
+    <div id="tabs" class="hidden mt-6 flex gap-4">
+      <button id="allPostsTab" class="px-4 py-2 bg-blue-500 text-white rounded">All Posts</button>
+      <button id="followingTab" class="px-4 py-2 bg-gray-500 text-white rounded">Following</button>
+    </div>
+
+    <!-- Posts Feed -->
+    <div id="posts" class="mt-6 space-y-4"></div>
   </div>
 
-  <!-- Firebase v9 modular via CDN (uses ES modules) -->
   <script type="module">
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
-  authDomain: "codenthusiast-d4e21.firebaseapp.com",
-  projectId: "codenthusiast-d4e21",
-  storageBucket: "codenthusiast-d4e21.firebasestorage.app",
-  messagingSenderId: "1098736253424",
-  appId: "1:1098736253424:web:0813491a1279ca7ada8535",
-  measurementId: "G-C88NVCTDMV"
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // 🔹 Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
+      authDomain: "codenthusiast-d4e21.firebaseapp.com",
+      projectId: "codenthusiast-d4e21",
+      storageBucket: "codenthusiast-d4e21.firebasestorage.app",
+      messagingSenderId: "1098736253424",
+      appId: "1:1098736253424:web:0813491a1279ca7ada8535",
+      measurementId: "G-C88NVCTDMV"
     };
-    // =====================================================
 
-    // If user forgets to paste config, show message and stop:
-    if (!firebaseConfig || !firebaseConfig.apiKey) {
-      document.body.insertAdjacentHTML('afterbegin',
-        '<div style="background:#fee2e2;color:#9b1c1c;padding:12px;text-align:center">🔥 You must paste your Firebase config into this file. See setup steps above.</div>');
-      throw new Error('Missing firebaseConfig');
-    }
-
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
-
-    // init
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
     const provider = new GoogleAuthProvider();
+    const db = getFirestore(app);
 
-    // ui elements
-    const authBtn = document.getElementById('authBtn');
-    const userName = document.getElementById('userName');
-    const uploadCard = document.getElementById('uploadCard');
-    const projectForm = document.getElementById('projectForm');
-    const projectsDiv = document.getElementById('projects');
-    const uploadStatus = document.getElementById('uploadStatus');
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const postSection = document.getElementById("postSection");
+    const postBtn = document.getElementById("postBtn");
+    const postsDiv = document.getElementById("posts");
+    const searchSection = document.getElementById("searchSection");
+    const searchInput = document.getElementById("searchInput");
+    const searchResults = document.getElementById("searchResults");
+    const tabs = document.getElementById("tabs");
+    const allPostsTab = document.getElementById("allPostsTab");
+    const followingTab = document.getElementById("followingTab");
 
     let currentUser = null;
+    let following = [];
 
-    authBtn.addEventListener('click', async () => {
-      if (currentUser) {
-        await signOut(auth);
-      } else {
-        try {
-          await signInWithPopup(auth, provider);
-        } catch (e) {
-          alert('Sign-in failed: ' + e.message);
-        }
-      }
-    });
+    // 🔹 Login
+    loginBtn.onclick = async () => {
+      const result = await signInWithPopup(auth, provider);
+      currentUser = result.user;
 
-    onAuthStateChanged(auth, user => {
-      currentUser = user;
-      if (user) {
-        userName.textContent = user.displayName || user.email;
-        authBtn.textContent = 'Sign out';
-        uploadCard.style.display = 'block';
-      } else {
-        userName.textContent = '';
-        authBtn.textContent = 'Sign in';
-        uploadCard.style.display = 'none';
-      }
-    });
+      // Save user to Firestore
+      await setDoc(doc(db, "users", currentUser.uid), {
+        email: currentUser.email,
+        displayName: currentUser.displayName
+      }, { merge: true });
 
-    // realtime projects listener
-    const projectsCol = collection(db, 'projects');
-    const q = query(projectsCol, orderBy('createdAt', 'desc'));
-    onSnapshot(q, snapshot => {
-      projectsDiv.innerHTML = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const el = document.createElement('div');
-        el.className = 'card';
-        el.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-weight:600">${escapeHtml(data.title || '(no title)')}</div>
-            <div class="small">${(data.authorName || 'Anonymous')}</div>
-          </div>
-          <div class="small" style="margin-top:6px">${escapeHtml(data.description || '')}</div>
-          ${data.imageUrl ? `<img src="${escapeAttr(data.imageUrl)}" class="preview" alt="project image">` : ''}
-          <div class="small" style="margin-top:8px;color:#888">${new Date((data.createdAt && data.createdAt.seconds ? data.createdAt.seconds*1000 : Date.now())).toLocaleString()}</div>
-        `;
-        projectsDiv.appendChild(el);
+      loginBtn.classList.add("hidden");
+      logoutBtn.classList.remove("hidden");
+      postSection.classList.remove("hidden");
+      searchSection.classList.remove("hidden");
+      tabs.classList.remove("hidden");
+
+      loadPosts();
+    };
+
+    // 🔹 Logout
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      currentUser = null;
+      loginBtn.classList.remove("hidden");
+      logoutBtn.classList.add("hidden");
+      postSection.classList.add("hidden");
+      searchSection.classList.add("hidden");
+      tabs.classList.add("hidden");
+      postsDiv.innerHTML = "";
+    };
+
+    // 🔹 Create Post
+    postBtn.onclick = async () => {
+      const content = document.getElementById("postContent").value;
+      if (!content) return;
+      await addDoc(collection(db, "posts"), {
+        uid: currentUser.uid,
+        author: currentUser.displayName,
+        email: currentUser.email,
+        content,
+        createdAt: Date.now()
       });
-    });
+      document.getElementById("postContent").value = "";
+      loadPosts();
+    };
 
-    // handle project uploads
-    projectForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!currentUser) { alert('Please sign-in first'); return; }
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const imageInput = document.getElementById('image');
-      uploadStatus.textContent = 'Uploading...';
+    // 🔹 Load Posts
+    async function loadPosts(followingOnly = false) {
+      postsDiv.innerHTML = "";
+      let q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
 
-      try {
-        let imageUrl = '';
-        if (imageInput.files && imageInput.files[0]) {
-          const file = imageInput.files[0];
-          const path = `projects/${currentUser.uid}/${Date.now()}_${file.name}`;
-          const sRef = storageRef(storage, path);
-          await uploadBytes(sRef, file);
-          imageUrl = await getDownloadURL(sRef);
+      snapshot.forEach(docSnap => {
+        const post = docSnap.data();
+
+        if (followingOnly && !following.includes(post.uid)) return;
+
+        const postDiv = document.createElement("div");
+        postDiv.className = "p-4 bg-white rounded shadow";
+
+        postDiv.innerHTML = `
+          <div class="flex justify-between">
+            <div>
+              <strong>${post.author}</strong> <small class="text-gray-500">(${post.email})</small>
+            </div>
+            ${currentUser && post.uid === currentUser.uid ? 
+              `<button class="text-red-500" data-id="${docSnap.id}">Delete</button>` : ""}
+          </div>
+          <p class="mt-2">${post.content}</p>
+        `;
+
+        // Delete functionality
+        if (currentUser && post.uid === currentUser.uid) {
+          postDiv.querySelector("button").onclick = async () => {
+            await deleteDoc(doc(db, "posts", docSnap.id));
+            loadPosts(followingOnly);
+          };
         }
 
-        await addDoc(projectsCol, {
-          title,
-          description,
-          imageUrl,
-          authorName: currentUser.displayName || currentUser.email,
-          uid: currentUser.uid,
-          createdAt: serverTimestamp()
-        });
-
-        uploadStatus.textContent = 'Uploaded ✓';
-        projectForm.reset();
-        setTimeout(()=>uploadStatus.textContent='', 2000);
-      } catch (err) {
-        console.error(err);
-        uploadStatus.textContent = 'Error: ' + (err.message || err);
-      }
-    });
-
-    // small helpers
-    function escapeHtml(s) {
-      if (!s) return '';
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        postsDiv.appendChild(postDiv);
+      });
     }
-    function escapeAttr(s){ return s ? s.replace(/"/g, '&quot;') : s; }
+
+    // 🔹 Search Coders
+    searchInput.oninput = async () => {
+      searchResults.innerHTML = "";
+      const queryText = searchInput.value.toLowerCase();
+      if (!queryText) return;
+
+      const snapshot = await getDocs(collection(db, "users"));
+      snapshot.forEach(docSnap => {
+        const user = docSnap.data();
+        if (user.email.toLowerCase().includes(queryText)) {
+          const div = document.createElement("div");
+          div.className = "p-2 border-b flex justify-between";
+          div.innerHTML = `
+            <span>${user.displayName} (${user.email})</span>
+            <button class="text-blue-600" data-id="${docSnap.id}">Follow</button>
+          `;
+          div.querySelector("button").onclick = async () => {
+            following.push(docSnap.id);
+            await setDoc(doc(db, "following", currentUser.uid), { list: following });
+            alert("Followed " + user.displayName);
+          };
+          searchResults.appendChild(div);
+        }
+      });
+    };
+
+    // 🔹 Tabs
+    allPostsTab.onclick = () => loadPosts(false);
+    followingTab.onclick = () => loadPosts(true);
 
   </script>
 </body>
