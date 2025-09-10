@@ -5,56 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Codenthusiast</title>
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
   <header>
     <h1>Codenthusiast</h1>
-    <div>
-      <button id="loginBtn">Sign in with Google</button>
-      <button id="logoutBtn" style="display:none;">Logout</button>
-      <span id="userInfo"></span>
-    </div>
+    <button id="loginBtn">Sign in with Google</button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+    <span id="userStatus"></span>
   </header>
 
-  <nav>
-    <button onclick="showTab('feed')">Feed</button>
-    <button onclick="showTab('following')">Following</button>
-    <button onclick="showTab('search')">Search Coders</button>
-  </nav>
-
   <main>
-    <!-- Feed -->
-    <section id="feed" class="tab">
-      <h2>Global Feed</h2>
-      <form id="postForm">
-        <textarea id="postText" placeholder="What's on your mind?" required></textarea>
-        <input type="file" id="postFile">
-        <button type="submit">Post</button>
-      </form>
-      <div id="posts"></div>
+    <!-- Post form -->
+    <section id="postForm" style="display:none;">
+      <textarea id="postInput" placeholder="What's on your mind?"></textarea>
+      <input type="file" id="fileInput">
+      <button id="postBtn">Post</button>
     </section>
 
-    <!-- Following -->
-    <section id="following" class="tab hidden">
-      <h2>Following</h2>
-      <div id="followingPosts"></div>
-    </section>
-
-    <!-- Search -->
-    <section id="search" class="tab hidden">
-      <h2>Find Coders</h2>
-      <input type="text" id="searchInput" placeholder="Search by name">
-      <div id="searchResults"></div>
-    </section>
+    <!-- Posts list -->
+    <section id="posts"></section>
   </main>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
+  <!-- Firebase v8 SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+  <!-- Your App -->
   <script src="app.js"></script>
 </body>
 </html>
-
