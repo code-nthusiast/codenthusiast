@@ -1,101 +1,93 @@
-// ✅ Import from Firebase SDK
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-
-// ✅ Your Firebase config
+// ✅ Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
   authDomain: "codenthusiast-d4e21.firebaseapp.com",
   projectId: "codenthusiast-d4e21",
-  storageBucket: "codenthusiast-d4e21.appspot.com",
+  storageBucket: "codenthusiast-d4e21.appspot.com", // fixed!
   messagingSenderId: "1098736253424",
   appId: "1:1098736253424:web:0813491a1279ca7ada8535",
   measurementId: "G-C88NVCTDMV"
 };
 
-// ✅ Init Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+// Initialize
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-// ✅ UI references
+// DOM elements
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
-const userInfo = document.getElementById("userInfo");
+const userStatus = document.getElementById("userStatus");
 const postForm = document.getElementById("postForm");
-const postText = document.getElementById("postText");
-const postFile = document.getElementById("postFile");
+const postInput = document.getElementById("postInput");
+const postBtn = document.getElementById("postBtn");
+const fileInput = document.getElementById("fileInput");
 const postsDiv = document.getElementById("posts");
 
-function showTab(id) {
-  document.querySelectorAll(".tab").forEach(tab => tab.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
-}
+let currentUser = null;
 
-// ✅ Login with Google
-loginBtn.addEventListener("click", async () => {
-  const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
-});
+// 🔑 Auth
+loginBtn.onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => alert(err.message));
+};
 
-logoutBtn.addEventListener("click", async () => {
-  await signOut(auth);
-});
+logoutBtn.onclick = () => auth.signOut();
 
-// ✅ Auth state
-onAuthStateChanged(auth, user => {
+auth.onAuthStateChanged(user => {
   if (user) {
+    currentUser = user;
+    userStatus.textContent = `Signed in as ${user.displayName}`;
     loginBtn.style.display = "none";
     logoutBtn.style.display = "inline-block";
-    userInfo.textContent = `Signed in as ${user.displayName}`;
+    postForm.style.display = "block";
   } else {
+    currentUser = null;
+    userStatus.textContent = "Not signed in";
     loginBtn.style.display = "inline-block";
     logoutBtn.style.display = "none";
-    userInfo.textContent = "";
+    postForm.style.display = "none";
   }
 });
 
-// ✅ Posting
-postForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const user = auth.currentUser;
-  if (!user) return alert("You must sign in first!");
+// 📝 Create post
+postBtn.onclick = async () => {
+  if (!currentUser) return alert("Sign in first!");
+  const text = postInput.value;
+  const file = fileInput.files[0];
+  let fileUrl = null;
 
-  let fileURL = "";
-  if (postFile.files.length > 0) {
-    const file = postFile.files[0];
-    const storageRef = ref(storage, `posts/${Date.now()}-${file.name}`);
-    await uploadBytes(storageRef, file);
-    fileURL = await getDownloadURL(storageRef);
+  if (file) {
+    const ref = storage.ref("uploads/" + Date.now() + "_" + file.name);
+    await ref.put(file);
+    fileUrl = await ref.getDownloadURL();
   }
 
-  await addDoc(collection(db, "posts"), {
-    text: postText.value,
-    fileURL,
-    author: user.displayName,
-    authorId: user.uid,
-    timestamp: serverTimestamp()
+  await db.collection("posts").add({
+    text,
+    fileUrl,
+    uid: currentUser.uid,
+    author: currentUser.displayName,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  postText.value = "";
-  postFile.value = "";
-});
+  postInput.value = "";
+  fileInput.value = "";
+};
 
-// ✅ Listen to posts
-const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-onSnapshot(q, snapshot => {
+// 📡 Listen for posts
+db.collection("posts").orderBy("createdAt", "desc").onSnapshot(snapshot => {
   postsDiv.innerHTML = "";
   snapshot.forEach(doc => {
     const post = doc.data();
-    postsDiv.innerHTML += `
-      <div class="post">
-        <strong>${post.author}</strong>
-        <p>${post.text}</p>
-        ${post.fileURL ? `<img src="${post.fileURL}">` : ""}
-      </div>
+    const div = document.createElement("div");
+    div.className = "post";
+    div.innerHTML = `
+      <strong>${post.author}</strong><br>
+      <p>${post.text || ""}</p>
+      ${post.fileUrl ? `<img src="${post.fileUrl}" style="max-width:100%;">` : ""}
     `;
+    postsDiv.appendChild(div);
   });
 });
