@@ -1,4 +1,10 @@
-// ✅ Firebase config
+// ✅ Import from Firebase SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+
+// ✅ Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDCzuCqNWUU3aZh5CBBA9Sq7lRchkBgBt4",
   authDomain: "codenthusiast-d4e21.firebaseapp.com",
@@ -10,10 +16,10 @@ const firebaseConfig = {
 };
 
 // ✅ Init Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 // ✅ UI references
 const loginBtn = document.getElementById("loginBtn");
@@ -31,16 +37,16 @@ function showTab(id) {
 
 // ✅ Login with Google
 loginBtn.addEventListener("click", async () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  await auth.signInWithPopup(provider);
+  const provider = new GoogleAuthProvider();
+  await signInWithPopup(auth, provider);
 });
 
 logoutBtn.addEventListener("click", async () => {
-  await auth.signOut();
+  await signOut(auth);
 });
 
 // ✅ Auth state
-auth.onAuthStateChanged(user => {
+onAuthStateChanged(auth, user => {
   if (user) {
     loginBtn.style.display = "none";
     logoutBtn.style.display = "inline-block";
@@ -61,103 +67,35 @@ postForm.addEventListener("submit", async (e) => {
   let fileURL = "";
   if (postFile.files.length > 0) {
     const file = postFile.files[0];
-    const storageRef = storage.ref(`posts/${Date.now()}-${file.name}`);
-    await storageRef.put(file);
-    fileURL = await storageRef.getDownloadURL();
+    const storageRef = ref(storage, `posts/${Date.now()}-${file.name}`);
+    await uploadBytes(storageRef, file);
+    fileURL = await getDownloadURL(storageRef);
   }
 
-  await db.collection("posts").add({
+  await addDoc(collection(db, "posts"), {
     text: postText.value,
     fileURL,
     author: user.displayName,
     authorId: user.uid,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    likes: [],
+    timestamp: serverTimestamp()
   });
 
   postText.value = "";
   postFile.value = "";
 });
 
-// ✅ Render posts
-db.collection("posts").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+// ✅ Listen to posts
+const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+onSnapshot(q, snapshot => {
   postsDiv.innerHTML = "";
   snapshot.forEach(doc => {
     const post = doc.data();
-    const postId = doc.id;
-    const user = auth.currentUser;
-    const liked = user && post.likes.includes(user.uid);
-
-    let html = `
+    postsDiv.innerHTML += `
       <div class="post">
         <strong>${post.author}</strong>
         <p>${post.text}</p>
         ${post.fileURL ? `<img src="${post.fileURL}">` : ""}
-        <div class="actions">
-          <button onclick="toggleLike('${postId}')">${liked ? "💔 Unlike" : "❤️ Like"}</button>
-          <span>${post.likes.length} likes</span>
-          ${user && user.uid === post.authorId ? `<button onclick="deletePost('${postId}')">🗑️ Delete</button>` : ""}
-        </div>
-        <div class="comments" id="comments-${postId}"></div>
-        <form onsubmit="addComment(event, '${postId}')">
-          <input type="text" placeholder="Add a comment..." required>
-          <button type="submit">Post</button>
-        </form>
       </div>
     `;
-    postsDiv.innerHTML += html;
-
-    // Load comments
-    loadComments(postId);
   });
 });
-
-// ✅ Like toggle
-async function toggleLike(postId) {
-  const user = auth.currentUser;
-  if (!user) return alert("Sign in first!");
-
-  const postRef = db.collection("posts").doc(postId);
-  const postDoc = await postRef.get();
-  let likes = postDoc.data().likes || [];
-
-  if (likes.includes(user.uid)) {
-    likes = likes.filter(id => id !== user.uid);
-  } else {
-    likes.push(user.uid);
-  }
-
-  await postRef.update({ likes });
-}
-
-// ✅ Delete post
-async function deletePost(postId) {
-  if (!confirm("Delete this post?")) return;
-  await db.collection("posts").doc(postId).delete();
-}
-
-// ✅ Comments
-async function addComment(e, postId) {
-  e.preventDefault();
-  const user = auth.currentUser;
-  if (!user) return alert("Sign in first!");
-  const text = e.target.querySelector("input").value;
-  await db.collection("posts").doc(postId).collection("comments").add({
-    text,
-    author: user.displayName,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  e.target.reset();
-}
-
-function loadComments(postId) {
-  const commentsDiv = document.getElementById(`comments-${postId}`);
-  db.collection("posts").doc(postId).collection("comments").orderBy("timestamp")
-    .onSnapshot(snapshot => {
-      commentsDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        commentsDiv.innerHTML += `<div class="comment"><strong>${c.author}:</strong> ${c.text}</div>`;
-      });
-    });
-}
